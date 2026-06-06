@@ -64,7 +64,7 @@ async def answer_question(update, context):
     logging.info(f"المادة: {subject} - المواد المتاحة: {list(MATERIALS.keys())}")
 
     try:
-        m = genai.GenerativeModel("gemini-1.5-flash")
+        m = genai.GenerativeModel("gemini-flash-latest")
         prompt = "انت مساعد تعليمي. المادة: " + subject + "\nالمنهج:\n" + material[:10000] + "\n\nسؤال الطالب: " + question + "\n\nاجب بالعربي بشكل مبسط."
         response = m.generate_content(prompt)
         answer = response.text
