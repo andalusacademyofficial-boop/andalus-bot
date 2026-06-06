@@ -65,8 +65,7 @@ async def answer_question(update, context):
 
     try:
         m = genai.GenerativeModel("gemini-flash-latest")
-        prompt = "انت مساعد تعليمي. المادة: " + subject + "\nالمنهج:\n" + material[:10000] + "\n\nسؤال الطالب: " + question + ""أجب بالعربي العامي المصري البسيط. لو الطالب بيسأل بالعامية رد بالعامية. اشرح بأسلوب سهل وواضح زي ما بتشرح لحد قاعد جنبك.""
-        response = m.generate_content(prompt)
+prompt = "انت مساعد تعليمي. المادة: " + subject + "\nالمنهج:\n" + material[:10000] + "\n\nسؤال الطالب: " + question + "\n\nاجب بالعربي العامي المصري البسيط. لو الطالب بيسأل بالعامية رد بالعامية. اشرح باسلوب سهل وواضح."        response = m.generate_content(prompt)
         answer = response.text
     except Exception as e:
         logging.error(f"Gemini error: {e}")
