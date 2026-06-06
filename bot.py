@@ -48,7 +48,7 @@ async def choose_subject(update, context):
         await update.message.reply_text("اختار من القايمة بس")
         return CHOOSING
     context.user_data["subject"] = SUBJECTS[chosen]
-    await update.message.reply_text(f"اخترت: {SUBJECTS[chosen]}\n\naسأل سؤالك:", reply_markup=ReplyKeyboardRemove())
+    await update.message.reply_text(f"اخترت: {SUBJECTS[chosen]}\n\nاسأل سؤالك:", reply_markup=ReplyKeyboardRemove())
     return ASKING
 
 async def answer_question(update, context):
@@ -64,8 +64,8 @@ async def answer_question(update, context):
     logging.info(f"المادة: {subject} - المواد المتاحة: {list(MATERIALS.keys())}")
 
     try:
-      m = genai.GenerativeModel("gemini-2.0-flash-exp")
-        prompt = f"انت مساعد تعليمي. المادة: {subject}\nالمنهج:\n{material[:10000]}\n\nسؤال الطالب: {question}\n\nاجب بالعربي بشكل مبسط."
+        m = genai.GenerativeModel("gemini-2.0-flash-exp")
+        prompt = "انت مساعد تعليمي. المادة: " + subject + "\nالمنهج:\n" + material[:10000] + "\n\nسؤال الطالب: " + question + "\n\nاجب بالعربي بشكل مبسط."
         response = m.generate_content(prompt)
         answer = response.text
     except Exception as e:
