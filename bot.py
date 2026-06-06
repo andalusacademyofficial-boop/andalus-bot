@@ -1,9 +1,14 @@
 import os
+import logging
 import google.generativeai as genai
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler
+from telegram.ext import (
+    ApplicationBuilder, CommandHandler, MessageHandler,
+    filters, ContextTypes, ConversationHandler
+)
 
-# Settings
+logging.basicConfig(level=logging.INFO)
+
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
@@ -25,14 +30,19 @@ SUBJECTS = {
 MATERIALS = {}
 
 def load_materials():
-    for filename in os.listdir("materials"):
+    folder = "materials"
+    if not os.path.exists(folder):
+        return
+    for filename in os.listdir(folder):
         if filename.endswith(".txt"):
             subject = filename.replace(".txt", "")
-            with open(f"materials/{filename}", "r", encoding="utf-8") as f:
+            with open(f"{folder}/{filename}", "r", encoding="utf-8") as f:
                 MATERIALS[subject] = f.read()
+    logging.info(f"تم تحميل {len(MATERIALS)} مادة")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [[key] for key in SUBJECTS.keys()]
+    keyboard.append(["📚 كل المواد"])
     reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
     await update.message.reply_text(
         "👋 أهلاً بك في بوت مركز الاندلس للتدريب!\n\nاختار المادة اللي عاوز تسأل فيها:",
@@ -45,7 +55,6 @@ async def choose_subject(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if chosen not in SUBJECTS:
         await update.message.reply_text("اختار من القايمة بس ✋")
         return CHOOSING
-    
     context.user_data["subject"] = SUBJECTS[chosen]
     await update.message.reply_text(
         f"✅ اخترت: {SUBJECTS[chosen]}\n\nاتفضل اسأل سؤالك:",
@@ -55,13 +64,14 @@ async def choose_subject(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def answer_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
     question = update.message.text
-    subject = context.user_data.get("subject")
-    material = MATERIALS.get(subject, "")
+    subject = context.user_data.get("subject", "")
 
     if question == "🔙 ارجع للمواد":
         return await start(update, context)
 
     await update.message.reply_text("⏳ بفكر...")
+
+    material = MATERIALS.get(subject, "")
 
     prompt = f"""أنت مساعد تعليمي متخصص في مركز الاندلس للتدريب.
 المادة: {subject}
@@ -76,6 +86,7 @@ async def answer_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
         response = model.generate_content(prompt)
         answer = response.text
     except Exception as e:
+        logging.error(f"Gemini error: {e}")
         answer = "حصل خطأ، حاول تاني بعد شوية."
 
     keyboard = [["🔙 ارجع للمواد"]]
@@ -83,13 +94,9 @@ async def answer_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(answer, reply_markup=reply_markup)
     return ASKING
 
-async def back(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    return await start(update, context)
-
 def main():
     load_materials()
-    app = Application.builder().token(TELEGRAM_TOKEN).build()
-    
+    app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
@@ -98,10 +105,9 @@ def main():
         },
         fallbacks=[CommandHandler("start", start)],
     )
-    
     app.add_handler(conv_handler)
-    print("البوت شغال...")
-    app.run_polling()
+    logging.info("البوت شغال...")
+    app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
     main()
