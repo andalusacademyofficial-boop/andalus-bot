@@ -39,7 +39,7 @@ def load_materials():
 async def start(update, context):
     keyboard = [[k] for k in SUBJECTS.keys()]
     markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
-    await update.message.reply_text("اهلا بك في بوت مركز الاندلس\n\nاختار المادة:", reply_markup=markup)
+    await update.message.reply_text("🏥 مركز الاندلس للتدريب\n\nيسعدنا أن نرحب بكم في البوت التعليمي الذكي\nالخاص بمركز الاندلس للتدريب — دمنهور، البحيرة\n\nنحن أول مركز تدريب مهني في محافظة البحيرة\nيعتمد على تقنيات الذكاء الاصطناعي في دعم\nالعملية التدريبية وخدمة طلابنا.\n\nهذا البوت يتيح لك الاستفسار عن محتوى المناهج\nالدراسية والحصول على إجابات فورية في أي وقت.\n\n━━━━━━━━━━━━━━━━━━━━━━\n📌 تعليمات الاستخدام:\n• اختر المادة التي تريد الاستفسار عنها\n• اكتب سؤالك بشكل عادي\n• لتغيير المادة اضغط ارجع للمواد\n━━━━━━━━━━━━━━━━━━━━━━\n\nاختر المادة:")
     return CHOOSING
 
 async def choose_subject(update, context):
@@ -65,7 +65,7 @@ async def answer_question(update, context):
 
     try:
         m = genai.GenerativeModel("gemini-flash-latest")
-        prompt = "انت مساعد تعليمي. المادة: " + subject + "\nالمنهج:\n" + material[:10000] + "\n\nسؤال الطالب: " + question + "\n\nاجب بالعربي بشكل مبسط."
+        prompt = "انت مساعد تعليمي. المادة: " + subject + "\nالمنهج:\n" + material[:10000] + "\n\nسؤال الطالب: " + question + ""أجب بالعربي العامي المصري البسيط. لو الطالب بيسأل بالعامية رد بالعامية. اشرح بأسلوب سهل وواضح زي ما بتشرح لحد قاعد جنبك.""
         response = m.generate_content(prompt)
         answer = response.text
     except Exception as e:
