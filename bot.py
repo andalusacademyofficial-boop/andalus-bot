@@ -25,6 +25,24 @@ SUBJECTS = {
 
 MATERIALS = {}
 
+WELCOME = (
+    "🏥 مركز الاندلس للتدريب\n\n"
+    "يسعدنا ترحيبكم في البوت التعليمي الذكي\n"
+    "مركز الاندلس للتدريب — دمنهور، البحيرة\n\n"
+    "نحن أول مركز تدريب مهني في محافظة البحيرة\n"
+    "يعتمد على تقنيات الذكاء الاصطناعي في دعم\n"
+    "العملية التدريبية وخدمة طلابنا.\n\n"
+    "هذا البوت يتيح لك الاستفسار عن محتوى المناهج\n"
+    "والحصول على إجابات فورية في أي وقت.\n\n"
+    "━━━━━━━━━━━━━━━━━━━━━━\n"
+    "تعليمات الاستخدام:\n"
+    "اختر المادة التي تريد الاستفسار عنها\n"
+    "اكتب سؤالك بشكل عادي\n"
+    "لتغيير المادة اضغط ارجع للمواد\n"
+    "━━━━━━━━━━━━━━━━━━━━━━\n\n"
+    "اختر المادة:"
+)
+
 def load_materials():
     folder = "materials"
     if not os.path.exists(folder):
@@ -39,7 +57,7 @@ def load_materials():
 async def start(update, context):
     keyboard = [[k] for k in SUBJECTS.keys()]
     markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
-    await update.message.reply_text("🏥 مركز الاندلس للتدريب\n\nيسعدنا أن نرحب بكم في البوت التعليمي الذكي\nالخاص بمركز الاندلس للتدريب — دمنهور، البحيرة\n\nنحن أول مركز تدريب مهني في محافظة البحيرة\nيعتمد على تقنيات الذكاء الاصطناعي في دعم\nالعملية التدريبية وخدمة طلابنا.\n\nهذا البوت يتيح لك الاستفسار عن محتوى المناهج\nالدراسية والحصول على إجابات فورية في أي وقت.\n\n━━━━━━━━━━━━━━━━━━━━━━\n📌 تعليمات الاستخدام:\n• اختر المادة التي تريد الاستفسار عنها\n• اكتب سؤالك بشكل عادي\n• لتغيير المادة اضغط ارجع للمواد\n━━━━━━━━━━━━━━━━━━━━━━\n\nاختر المادة:")
+    await update.message.reply_text(WELCOME, reply_markup=markup)
     return CHOOSING
 
 async def choose_subject(update, context):
@@ -48,7 +66,10 @@ async def choose_subject(update, context):
         await update.message.reply_text("اختار من القايمة بس")
         return CHOOSING
     context.user_data["subject"] = SUBJECTS[chosen]
-    await update.message.reply_text(f"اخترت: {SUBJECTS[chosen]}\n\nاسأل سؤالك:", reply_markup=ReplyKeyboardRemove())
+    await update.message.reply_text(
+        "اخترت: " + SUBJECTS[chosen] + "\n\nاسأل سؤالك:",
+        reply_markup=ReplyKeyboardRemove()
+    )
     return ASKING
 
 async def answer_question(update, context):
@@ -65,11 +86,19 @@ async def answer_question(update, context):
 
     try:
         m = genai.GenerativeModel("gemini-flash-latest")
-prompt = "انت مساعد تعليمي. المادة: " + subject + "\nالمنهج:\n" + material[:10000] + "\n\nسؤال الطالب: " + question + "\n\nاجب بالعربي العامي المصري البسيط. لو الطالب بيسأل بالعامية رد بالعامية. اشرح باسلوب سهل وواضح."        response = m.generate_content(prompt)
+        prompt = (
+            "انت مساعد تعليمي متخصص في مركز الاندلس للتدريب. "
+            "المادة: " + subject + "\n"
+            "المنهج:\n" + material[:10000] + "\n\n"
+            "سؤال الطالب: " + question + "\n\n"
+            "اجب بالعربي العامي المصري البسيط. "
+            "اشرح باسلوب سهل وواضح زي ما بتشرح لحد قاعد جنبك."
+        )
+        response = m.generate_content(prompt)
         answer = response.text
     except Exception as e:
         logging.error(f"Gemini error: {e}")
-        answer = f"خطأ: {str(e)}"
+        answer = "خطأ: " + str(e)
 
     markup = ReplyKeyboardMarkup([["ارجع للمواد"]], resize_keyboard=True)
     await update.message.reply_text(answer, reply_markup=markup)
