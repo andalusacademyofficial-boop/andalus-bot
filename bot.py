@@ -13,7 +13,6 @@ TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-2.0-flash')
 
 CHOOSING, ASKING = range(2)
 
@@ -32,17 +31,17 @@ MATERIALS = {}
 def load_materials():
     folder = "materials"
     if not os.path.exists(folder):
+        logging.warning("فولدر materials مش موجود")
         return
     for filename in os.listdir(folder):
         if filename.endswith(".txt"):
             subject = filename.replace(".txt", "")
             with open(f"{folder}/{filename}", "r", encoding="utf-8") as f:
                 MATERIALS[subject] = f.read()
-    logging.info(f"تم تحميل {len(MATERIALS)} مادة")
+    logging.info(f"تم تحميل {len(MATERIALS)} مادة: {list(MATERIALS.keys())}")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [[key] for key in SUBJECTS.keys()]
-    keyboard.append(["📚 كل المواد"])
     reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
     await update.message.reply_text(
         "👋 أهلاً بك في بوت مركز الاندلس للتدريب!\n\nاختار المادة اللي عاوز تسأل فيها:",
@@ -59,55 +58,3 @@ async def choose_subject(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         f"✅ اخترت: {SUBJECTS[chosen]}\n\nاتفضل اسأل سؤالك:",
         reply_markup=ReplyKeyboardRemove()
-    )
-    return ASKING
-
-async def answer_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    question = update.message.text
-    subject = context.user_data.get("subject", "")
-
-    if question == "🔙 ارجع للمواد":
-        return await start(update, context)
-
-    await update.message.reply_text("⏳ بفكر...")
-
-    material = MATERIALS.get(subject, "")
-
-    prompt = f"""أنت مساعد تعليمي متخصص في مركز الاندلس للتدريب.
-المادة: {subject}
-محتوى المنهج:
-{material[:15000]}
-
-سؤال الطالب: {question}
-
-أجب بالعربي بشكل واضح ومبسط من المنهج فقط. لو السؤال مش موجود في المنهج قول للطالب بأدب."""
-
-    try:
-        response = model.generate_content(prompt)
-        answer = response.text
-    except Exception as e:
-        logging.error(f"Gemini error: {e}")
-        answer = "حصل خطأ، حاول تاني بعد شوية."
-
-    keyboard = [["🔙 ارجع للمواد"]]
-    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-    await update.message.reply_text(answer, reply_markup=reply_markup)
-    return ASKING
-
-def main():
-    load_materials()
-    app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
-    conv_handler = ConversationHandler(
-        entry_points=[CommandHandler("start", start)],
-        states={
-            CHOOSING: [MessageHandler(filters.TEXT & ~filters.COMMAND, choose_subject)],
-            ASKING: [MessageHandler(filters.TEXT & ~filters.COMMAND, answer_question)],
-        },
-        fallbacks=[CommandHandler("start", start)],
-    )
-    app.add_handler(conv_handler)
-    logging.info("البوت شغال...")
-    app.run_polling(drop_pending_updates=True)
-
-if __name__ == "__main__":
-    main()
